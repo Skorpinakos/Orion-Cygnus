@@ -62,7 +62,7 @@ services:
           sleep 5;
         done;
         echo 'Orion is available. Creating subscription...';
-        curl -X POST 'http://orion:1026/v2/subscriptions' -H 'Content-Type: application/json' -d '{\"description\": \"Test SUB\", \"subject\": {\"entities\": [{\"idPattern\": \".*\", \"typePattern\": \".*\"}]}, \"notification\": {\"http\": {\"url\": \"http://fiware-cygnus:5050/notify\"}}}'
+        curl -X POST 'http://orion:1026/v2/subscriptions' -H 'Content-Type: application/json' -d '{\"description\": \"SUB2ALL\", \"subject\": {\"entities\": [{\"idPattern\": \".*\", \"typePattern\": \".*\"}]}, \"notification\": {\"http\": {\"url\": \"http://fiware-cygnus:5050/notify\"}}}'
         echo 'Subscription created successfully.';
       "
     networks:
