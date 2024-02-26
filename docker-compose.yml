@@ -1,0 +1,79 @@
+version: '3.5'
+
+services:
+  orion:
+    image: fiware/orion-ld:1.5.0
+    hostname: orion
+    container_name: fiware-orion
+    ports:
+      - "1026:1026"
+    depends_on:
+      - mongo-db
+    command: -dbhost mongo-db -logLevel DEBUG
+    networks:
+      - fiware-net
+
+  mongo-db:
+    image: mongo:3.6.0
+    hostname: mongo-db
+    container_name: db-mongo
+    volumes:
+      - mongo-db:/data
+    networks:
+      - fiware-net
+
+  fiware-cygnus:
+    image: fiware/cygnus-ngsi:3.5.0
+    container_name: fiware-cygnus
+    ports:
+      - "5050:5050"
+    environment:
+      - CYGNUS_MYSQL_HOST=db-mysql
+      - CYGNUS_MYSQL_PORT=3306
+      - CYGNUS_MYSQL_USER=root
+      - CYGNUS_MYSQL_PASS=root_pass
+      - CYGNUS_MYSQL_ENABLE_CACHE=false
+      - CYGNUS_MYSQL_ENABLE_HISTORY=false
+    depends_on:
+      - db-mysql
+    networks:
+      - fiware-net
+
+  db-mysql:
+    image: mysql:8.3.0
+    container_name: db-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fiware-net
+
+  init-subscription:
+    image: curlimages/curl:latest
+    depends_on:
+      - orion
+    command: >
+      /bin/sh -c "
+        echo 'Waiting for Orion to become available...';
+        while ! curl -f -s http://orion:1026/version; do
+          sleep 5;
+        done;
+        echo 'Orion is available. Creating subscription...';
+        curl -X POST 'http://orion:1026/v2/subscriptions' -H 'Content-Type: application/json' -d '{\"description\": \"Test SUB\", \"subject\": {\"entities\": [{\"idPattern\": \".*\", \"typePattern\": \".*\"}]}, \"notification\": {\"http\": {\"url\": \"http://fiware-cygnus:5050/notify\"}}}'
+        echo 'Subscription created successfully.';
+      "
+    networks:
+      - fiware-net
+
+
+
+networks:
+  fiware-net:
+    driver: bridge
+
+volumes:
+  mongo-db: ~
+  mysql_data: ~
